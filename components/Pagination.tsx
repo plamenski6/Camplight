@@ -68,6 +68,8 @@ export default function CustomPagination({ total }: Props) {
   };
 
   useEffect(() => {
+    localStorage.removeItem("deletedUsers");
+    localStorage.removeItem("editedUsers");
     getUsers(0);
     setInitialLoad(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
