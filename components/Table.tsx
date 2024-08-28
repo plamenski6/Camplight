@@ -12,7 +12,8 @@ interface Props {
 }
 
 export default function CustomTable({ users }: Props) {
-  const { contextUsers, setContextUsers } = useContext(ThemeContext);
+  const { contextUsers, setContextUsers, search, setResearch } =
+    useContext(ThemeContext);
   const [editUserCredentials, setEditUserCredentials] = useState({
     id: 0,
     name: "",
@@ -45,7 +46,7 @@ export default function CustomTable({ users }: Props) {
           localStorage.setItem("deletedUsers", JSON.stringify([result.id]));
         }
         let updatedUsers = mappedUsers.filter((user) => user.id !== id);
-        if (updatedUsers.length < 10) {
+        if (updatedUsers.length < 10 && !search) {
           const response = await fetch(
             `https://dummyjson.com/users?limit=${
               10 - updatedUsers.length
@@ -66,67 +67,72 @@ export default function CustomTable({ users }: Props) {
 
   return (
     <>
-      <Table striped hover responsive className="mb-0">
-        <thead>
-          <tr>
-            <th className="d-flex border-0">
-              <span className="material-icons">person</span>
-            </th>
-            <th className="border-0">Name</th>
-            <th className="border-0">Email</th>
-            <th className="border-0">Phone</th>
-            <th className="border-0">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mappedUsers.map((user) => (
-            <tr key={user.id}>
-              <td className="text-center border-0">{user.id}</td>
-              <td className="border-0">
-                {user.firstName} {user.lastName}
-              </td>
-              <td className="border-0">
-                <a className="link-warning" href={`mailto:${user.email}`}>
-                  {user.email}
-                </a>
-              </td>
-              <td className="border-0">
-                <a className="link-danger" href={`tel:${user.phone}`}>
-                  {user.phone}
-                </a>
-              </td>
-              <td className="d-flex justify-content-center border-0">
-                <span
-                  title={`Edit ${user.firstName} ${user.lastName}`}
-                  role="button"
-                  className="link-warning material-icons"
-                  onClick={() => {
-                    setEditUserCredentials({
-                      id: user.id,
-                      name: `${user.firstName}${
-                        user.lastName ? ` ${user.lastName}` : ""
-                      }`,
-                      email: user.email,
-                      phone: user.phone,
-                    });
-                    setShow(true);
-                  }}
-                >
-                  edit
-                </span>
-                <span
-                  title={`Delete ${user.firstName} ${user.lastName}`}
-                  role="button"
-                  className="link-danger material-icons"
-                  onClick={() => deleteUser(user.id)}
-                >
-                  delete
-                </span>
-              </td>
+      {mappedUsers.length > 0 ? (
+        <Table striped hover responsive className="mb-0">
+          <thead>
+            <tr>
+              <th className="d-flex border-0">
+                <span className="material-icons">person</span>
+              </th>
+              <th className="border-0">Name</th>
+              <th className="border-0">Email</th>
+              <th className="border-0">Phone</th>
+              <th className="border-0">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {mappedUsers.map((user) => (
+              <tr key={user.id}>
+                <td className="text-center border-0">{user.id}</td>
+                <td className="border-0">
+                  {user.firstName} {user.lastName}
+                </td>
+                <td className="border-0">
+                  <a className="link-warning" href={`mailto:${user.email}`}>
+                    {user.email}
+                  </a>
+                </td>
+                <td className="border-0">
+                  <a className="link-danger" href={`tel:${user.phone}`}>
+                    {user.phone}
+                  </a>
+                </td>
+                <td className="d-flex justify-content-center border-0">
+                  <span
+                    title={`Edit ${user.firstName} ${user.lastName}`}
+                    role="button"
+                    className="link-warning material-icons"
+                    onClick={() => {
+                      setEditUserCredentials({
+                        id: user.id,
+                        name: `${user.firstName}${
+                          user.lastName ? ` ${user.lastName}` : ""
+                        }`,
+                        email: user.email,
+                        phone: user.phone,
+                      });
+                      setResearch(false);
+                      setShow(true);
+                    }}
+                  >
+                    edit
+                  </span>
+                  <span
+                    title={`Delete ${user.firstName} ${user.lastName}`}
+                    role="button"
+                    className="link-danger material-icons"
+                    onClick={() => deleteUser(user.id)}
+                  >
+                    delete
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <p className="text-center">No users found</p>
+      )}
 
       <UserModal
         edit

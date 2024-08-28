@@ -15,6 +15,8 @@ interface ContextObject {
   setContextUsers: Dispatch<SetStateAction<User[] | undefined>>;
   search: string;
   setSearch: Dispatch<SetStateAction<string>>;
+  research: boolean;
+  setResearch: Dispatch<SetStateAction<boolean>>;
 }
 
 export const ThemeContext: Context<ContextObject> = createContext(
@@ -28,11 +30,19 @@ export default function ThemeProvider({
 }) {
   const [contextUsers, setContextUsers] = useState<User[]>();
   const [search, setSearch] = useState("");
+  const [research, setResearch] = useState(false);
 
   return (
     <>
       <ThemeContext.Provider
-        value={{ contextUsers, setContextUsers, search, setSearch }}
+        value={{
+          contextUsers,
+          setContextUsers,
+          search,
+          setSearch,
+          research,
+          setResearch,
+        }}
       >
         {children}
       </ThemeContext.Provider>

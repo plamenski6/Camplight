@@ -31,7 +31,7 @@ export default function UserModal({
   getUsers,
   editUserCredentials,
 }: Props) {
-  const { contextUsers, setSearch } = useContext(ThemeContext);
+  const { contextUsers, setSearch, setResearch } = useContext(ThemeContext);
   const [validated, setValidated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -100,7 +100,36 @@ export default function UserModal({
         const result: User = await response.json();
         if (result.id) {
           toast.success(`Successfully ${edit ? "edited" : "created"} user`);
-          if (edit) {
+          if (edit && editUserCredentials) {
+            if (localStorage.getItem("editedUsers")) {
+              let editedUsers: User[] = JSON.parse(
+                localStorage.getItem("editedUsers") as string
+              );
+              const editedIds = editedUsers.map((editedUser) => editedUser.id);
+              if (editedIds.includes(editUserCredentials.id)) {
+                const editedUserIndex = editedUsers.findIndex(
+                  (editedUser) => editedUser.id === editUserCredentials.id
+                );
+                editedUsers.splice(editedUserIndex, 1, {
+                  id: editUserCredentials.id,
+                  ...body,
+                  isDeleted: false,
+                });
+              } else {
+                editedUsers.push({
+                  id: editUserCredentials.id,
+                  ...body,
+                  isDeleted: false,
+                });
+              }
+              localStorage.setItem("editedUsers", JSON.stringify(editedUsers));
+            } else {
+              localStorage.setItem(
+                "editedUsers",
+                JSON.stringify([{ id: editUserCredentials.id, ...body }])
+              );
+            }
+
             userIndex &&
               editUserCredentials &&
               contextUsers?.splice(userIndex, 1, {
@@ -108,6 +137,8 @@ export default function UserModal({
                 ...body,
                 isDeleted: false,
               });
+
+            setResearch(true);
           } else {
             setSearch("");
             getUsers &&

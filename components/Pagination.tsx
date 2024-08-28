@@ -45,6 +45,21 @@ export default function CustomPagination({ total }: Props) {
             lastName: credentials.name.split(" ")[1],
           });
       }
+
+      const editedUsers: User[] = JSON.parse(
+        localStorage.getItem("editedUsers") as string
+      );
+      if (editedUsers) {
+        const editedIds = editedUsers.map((editedUser) => editedUser.id);
+        updatedUsers = updatedUsers.map((user) => {
+          if (editedIds.includes(user.id)) {
+            return editedUsers.find((editedUser) => editedUser.id === user.id);
+          } else {
+            return user;
+          }
+        }) as User[];
+      }
+
       setContextUsers(updatedUsers);
       setUsers(updatedUsers);
     } catch (err) {
@@ -53,7 +68,6 @@ export default function CustomPagination({ total }: Props) {
   };
 
   useEffect(() => {
-    if (initialLoad) localStorage.removeItem("deletedUsers");
     getUsers(0);
     setInitialLoad(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,7 +80,9 @@ export default function CustomPagination({ total }: Props) {
   const nextDisabled =
     (search && contextUsers && contextUsers?.length < 10) ||
     initialLoad ||
-    (users && users[users.length - 1].id === total);
+    (users &&
+      (users[users.length - 1].id === total ||
+        users[users.length - 1].id === 209));
 
   return (
     <>
