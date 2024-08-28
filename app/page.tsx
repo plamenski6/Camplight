@@ -3,6 +3,7 @@ import { Result } from "@/types";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import ThemeProvider from "./theme-provider";
+import SearchBar from "@/components/SearchBar";
 
 export default async function Home() {
   const response = await fetch("https://dummyjson.com/users?limit=10&skip=0");
@@ -15,6 +16,7 @@ export default async function Home() {
 
       <ThemeProvider>
         <div className={styles.provider}>
+          <SearchBar />
           <Table users={users} />
           <Pagination total={result.total} />
         </div>

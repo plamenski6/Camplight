@@ -13,3 +13,10 @@ export interface User {
   phone: string;
   isDeleted: boolean;
 }
+
+export interface userCredentials {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+}

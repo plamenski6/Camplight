@@ -1,32 +1,37 @@
 "use client";
 
-import { User } from "@/types";
+import { ThemeContext } from "@/app/theme-provider";
+import { User, userCredentials } from "@/types";
 import {
   ChangeEvent,
   Dispatch,
   FormEvent,
   SetStateAction,
+  useContext,
+  useEffect,
   useState,
 } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
 import { toast } from "react-toastify";
 
 interface Props {
+  edit?: boolean;
   show: boolean;
-  total: number;
+  total?: number;
   setShow: Dispatch<SetStateAction<boolean>>;
-  getUsers: (
-    skip: number,
-    credentials?: {
-      id: number;
-      name: string;
-      email: string;
-      phone: string;
-    }
-  ) => Promise<void>;
+  getUsers?: (skip: number, credentials?: userCredentials) => Promise<void>;
+  editUserCredentials?: userCredentials;
 }
 
-export default function UserModal({ show, total, setShow, getUsers }: Props) {
+export default function UserModal({
+  edit,
+  show,
+  total,
+  setShow,
+  getUsers,
+  editUserCredentials,
+}: Props) {
+  const { contextUsers, setSearch } = useContext(ThemeContext);
   const [validated, setValidated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -34,6 +39,16 @@ export default function UserModal({ show, total, setShow, getUsers }: Props) {
     email: "",
     phone: "",
   });
+
+  useEffect(() => {
+    if (edit) {
+      setCredentials({
+        name: editUserCredentials?.name,
+        email: editUserCredentials?.email,
+        phone: editUserCredentials?.phone,
+      } as userCredentials);
+    }
+  }, [edit, editUserCredentials]);
 
   const inputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setCredentials((prevState) => ({
@@ -47,23 +62,67 @@ export default function UserModal({ show, total, setShow, getUsers }: Props) {
     const form = e.currentTarget;
 
     if (form.checkValidity()) {
+      const userIndex = contextUsers?.findIndex(
+        (user) => editUserCredentials && user.id === editUserCredentials.id
+      );
+
+      const body = {
+        firstName: credentials.name.split(" ")[0],
+        lastName: credentials.name.split(" ")[1],
+        email: credentials.email,
+        phone: credentials.phone,
+      };
+
+      if (editUserCredentials && editUserCredentials.id === 209) {
+        userIndex &&
+          editUserCredentials &&
+          contextUsers?.splice(userIndex, 1, {
+            id: editUserCredentials.id,
+            ...body,
+            isDeleted: false,
+          });
+        setShow(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const response = await fetch("https://dummyjson.com/users/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            firstName: credentials.name.split(" ")[0],
-            lastName: credentials.name.split(" ")[1],
-            email: credentials.email,
-            phone: credentials.phone,
-          }),
-        });
+        const response = await fetch(
+          `https://dummyjson.com/users/${
+            edit ? editUserCredentials && editUserCredentials.id : "add"
+          }`,
+          {
+            method: edit ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }
+        );
         const result: User = await response.json();
         if (result.id) {
-          toast.success("Successfully created user");
-          getUsers(total - (total % 10), { ...credentials, id: result.id });
+          toast.success(`Successfully ${edit ? "edited" : "created"} user`);
+          if (edit) {
+            userIndex &&
+              editUserCredentials &&
+              contextUsers?.splice(userIndex, 1, {
+                id: editUserCredentials.id,
+                ...body,
+                isDeleted: false,
+              });
+          } else {
+            setSearch("");
+            getUsers &&
+              total &&
+              getUsers(total - (total % 10), { ...credentials, id: result.id });
+          }
+          setCredentials({
+            name: "",
+            email: "",
+            phone: "",
+          });
+          setValidated(false);
+          setIsLoading(false);
           setShow(false);
+          return;
         } else {
           toast.error("Failed to create user");
         }
@@ -90,7 +149,7 @@ export default function UserModal({ show, total, setShow, getUsers }: Props) {
       }}
     >
       <Modal.Header closeButton>
-        <Modal.Title>Add user</Modal.Title>
+        <Modal.Title>{edit ? "Edit" : "Add"} user</Modal.Title>
       </Modal.Header>
       <Form noValidate validated={validated} onSubmit={submitHandler}>
         <Modal.Body>
@@ -128,7 +187,7 @@ export default function UserModal({ show, total, setShow, getUsers }: Props) {
               placeholder="+359XXXXXXXXX"
               value={credentials.phone}
               onChange={inputChange}
-              pattern="^\+?[\d]{8,}$"
+              pattern="^\+?[\d\- ]{8,}$"
               required
             />
             <Form.Control.Feedback type="invalid">
@@ -152,7 +211,7 @@ export default function UserModal({ show, total, setShow, getUsers }: Props) {
             Close
           </Button>
           <Button type="submit" variant="success" disabled={isLoading}>
-            Add
+            {edit ? "Edit" : "Add"}
           </Button>
         </Modal.Footer>
       </Form>

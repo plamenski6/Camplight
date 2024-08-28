@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeContext } from "@/app/theme-provider";
-import { Result, User } from "@/types";
+import { Result, User, userCredentials } from "@/types";
 import { useContext, useEffect, useState } from "react";
 import { Button, Pagination } from "react-bootstrap";
 import { toast } from "react-toastify";
@@ -12,20 +12,12 @@ interface Props {
 }
 
 export default function CustomPagination({ total }: Props) {
-  const { contextUsers, setContextUsers } = useContext(ThemeContext);
+  const { contextUsers, setContextUsers, search } = useContext(ThemeContext);
   const [initialLoad, setInitialLoad] = useState(true);
   const [users, setUsers] = useState<User[]>();
   const [show, setShow] = useState(false);
 
-  const getUsers = async (
-    skip: number,
-    credentials?: {
-      id: number;
-      name: string;
-      email: string;
-      phone: string;
-    }
-  ) => {
+  const getUsers = async (skip: number, credentials?: userCredentials) => {
     try {
       const response = await fetch(
         `https://dummyjson.com/users?limit=10&skip=${skip}`
@@ -67,9 +59,18 @@ export default function CustomPagination({ total }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const prevDisabled =
+    (search && contextUsers && contextUsers?.length < 10) ||
+    initialLoad ||
+    (users && users[0].id === 1);
+  const nextDisabled =
+    (search && contextUsers && contextUsers?.length < 10) ||
+    initialLoad ||
+    (users && users[users.length - 1].id === total);
+
   return (
     <>
-      <div className="w-100 d-flex justify-content-between align-items-start mt-4">
+      <div className="w-100 d-flex justify-content-between align-items-start mt-3">
         <Button
           variant="light"
           className="bg-white"
@@ -84,12 +85,34 @@ export default function CustomPagination({ total }: Props) {
           <Pagination.First
             linkClassName="link-dark"
             onClick={() => getUsers(0)}
-            disabled={initialLoad || (users && users[0].id === 1)}
+            disabled={prevDisabled}
           />
           <Pagination.Prev
             linkClassName="link-dark"
-            onClick={() => getUsers(contextUsers[0].id - 11)}
-            disabled={initialLoad || (users && users[0].id === 1)}
+            onClick={() => {
+              const deletedUsers = JSON.parse(
+                localStorage.getItem("deletedUsers") as string
+              );
+              let count = 0;
+              if (contextUsers) {
+                if (deletedUsers) {
+                  const firstPrevUser = contextUsers[0].id - 11;
+                  deletedUsers.forEach((delUser: number) => {
+                    if (
+                      contextUsers &&
+                      delUser < contextUsers[0].id &&
+                      delUser > firstPrevUser
+                    ) {
+                      count++;
+                    }
+                  });
+                  getUsers(contextUsers[0].id - (11 + count));
+                } else {
+                  getUsers(contextUsers[0].id - 11);
+                }
+              }
+            }}
+            disabled={prevDisabled}
           />
           {/* <Pagination.Item linkClassName="link-dark">{1}</Pagination.Item>
             <Pagination.Ellipsis linkClassName="link-dark" />
@@ -102,17 +125,16 @@ export default function CustomPagination({ total }: Props) {
             <Pagination.Item linkClassName="link-dark">{20}</Pagination.Item> */}
           <Pagination.Next
             linkClassName="link-dark"
-            onClick={() => getUsers(contextUsers[contextUsers?.length - 1].id)}
-            disabled={
-              initialLoad || (users && users[users.length - 1].id === total)
+            onClick={() =>
+              contextUsers &&
+              getUsers(contextUsers[contextUsers?.length - 1].id)
             }
+            disabled={nextDisabled}
           />
           <Pagination.Last
             linkClassName="link-dark"
             onClick={() => getUsers(total - (total % 10))}
-            disabled={
-              initialLoad || (users && users[users.length - 1].id === total)
-            }
+            disabled={nextDisabled}
           />
         </Pagination>
       </div>
